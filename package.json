@@ -1,7 +1,7 @@
 {
   "name": "nudgle",
   "version": "0.0.1",
-  "description": "A signal-based state management library, built from scratch",
+  "description": "A signal-based state management library, inspired by legend state",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,7 +10,8 @@
     "dev": "tsc --watch",
     "demo": "tsx src/demo.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "keywords": [
     "signals",
@@ -22,8 +23,22 @@
   "author": "sudeepgumaste",
   "license": "MIT",
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
+    "oxlint": "^1.85.0",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0",
     "vitest": "^5.0.2"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "oxlint",
+      "vitest related --run"
+    ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
