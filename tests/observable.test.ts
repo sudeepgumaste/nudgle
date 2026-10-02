@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { observable } from '../src/observable.js'
+import { observe } from '../src/observe.js'
 
 describe('observable (primitives)', () => {
   it('get() returns the initial value', () => {
@@ -44,7 +45,7 @@ describe('observable (objects)', () => {
     const job$ = observable({ status: 'queued', retries: 0 })
     job$.status.set('running')
     expect(job$.status.get()).toBe('running')
-    expect(job$.retries.get()).toBe(0) // untouched
+    expect(job$.retries.get()).toBe(0)
   })
 
   it('multiple sets accumulate correctly', () => {
@@ -67,30 +68,36 @@ describe('observable (objects)', () => {
   })
 })
 
-describe('proxy interception', () => {
-  it('get trap logs on read', () => {
-    const spy = vi.spyOn(console, 'log')
-    const count$ = observable(42)
-    count$.get()
-    expect(spy).toHaveBeenCalledWith('read: value')
-    spy.mockRestore()
+describe('observable subscriber notifications', () => {
+  it('notifies observer on primitive update', () => {
+    const count$ = observable(10)
+    const spy = vi.fn()
+    observe(() => {
+      spy(count$.get())
+    })
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).toHaveBeenCalledWith(10)
+
+    count$.set(20)
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(spy).toHaveBeenCalledWith(20)
   })
 
-  it('set trap logs on write', () => {
-    const spy = vi.spyOn(console, 'log')
-    const count$ = observable(42)
-    count$.set(99)
-    expect(spy).toHaveBeenCalledWith('write: value')
-    spy.mockRestore()
-  })
+  it('notifies observer only on updated object field', () => {
+    const job$ = observable({ status: 'queued', error: null as string | null })
+    const statusSpy = vi.fn()
+    observe(() => {
+      statusSpy(job$.status.get())
+    })
 
-  it('object field get/set log the correct key', () => {
-    const spy = vi.spyOn(console, 'log')
-    const obj$ = observable({ name: 'test' })
-    obj$.name.get()
-    expect(spy).toHaveBeenCalledWith('read: name')
-    obj$.name.set('updated')
-    expect(spy).toHaveBeenCalledWith('write: name')
-    spy.mockRestore()
+    expect(statusSpy).toHaveBeenCalledTimes(1)
+    expect(statusSpy).toHaveBeenCalledWith('queued')
+
+    job$.error.set('timeout')
+    expect(statusSpy).toHaveBeenCalledTimes(1)
+
+    job$.status.set('running')
+    expect(statusSpy).toHaveBeenCalledTimes(2)
+    expect(statusSpy).toHaveBeenCalledWith('running')
   })
 })

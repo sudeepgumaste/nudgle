@@ -1,2 +1,6 @@
 export { observable } from './observable.js'
 export type { Node, Observable } from './observable.js'
+export { observe } from './observe.js'
+export { computed } from './computed.js'
+export type { Computed } from './computed.js'
+export type { Observer } from './observer.js'

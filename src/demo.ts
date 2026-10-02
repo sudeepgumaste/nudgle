@@ -1,17 +1,26 @@
-import { observable } from './observable.js'
+import { observable, observe, computed } from './index.js'
 
-// --- Primitive observable ---
 const count$ = observable(0)
-console.log('--- primitive ---')
-count$.get()    // read: value  → 0
-count$.set(5)   // write: value
-count$.get()    // read: value  → 5
+observe(() => {
+  console.log('count is:', count$.get())
+})
+count$.set(5)
 
-console.log()
+type Job = {
+  status: string
+  error_message: string | null
+}
 
-// --- Object observable ---
-const job$ = observable({ status: 'queued', error_message: null as string | null })
-console.log('--- object ---')
-job$.status.get()         // read: status  → 'queued'
-job$.status.set('running') // write: status
-job$.error_message.get()  // read: error_message → null
+const job$ = observable<Job>({ status: 'queued', error_message: null })
+const summary$ = computed(() =>
+  job$.error_message.get()
+    ? `failed: ${job$.error_message.get()}`
+    : job$.status.get(),
+)
+
+observe(() => {
+  console.log('summary:', summary$.get())
+})
+
+job$.status.set('running')
+job$.error_message.set('timeout')

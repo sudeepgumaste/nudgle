@@ -1,38 +1,42 @@
+import { currentObserver, type Observer } from './observer.js'
+
 export type Node<V> = {
   get(): V
   set(value: V): void
 }
 
-// An observable of an object exposes a node per field;
-// an observable of a primitive IS a node.
 export type Observable<T> = T extends object
   ? { [K in keyof T]: Node<T[K]> }
   : Node<T>
 
 export function observable<T>(initialValue: T): Observable<T> {
   const isObject = initialValue !== null && typeof initialValue === 'object'
-
   const store: Record<string, unknown> = isObject
     ? { ...(initialValue as object) }
-    : { value: initialValue } // box the primitive
+    : { value: initialValue }
 
-  // Each key gets its own get/set pair.
+  const subscribers = new Map<string, Set<Observer>>()
+
   const node = (key: string): Node<unknown> => ({
     get() {
-      console.log(`read: ${key}`)
+      const observer = currentObserver()
+      if (observer) {
+        let subs = subscribers.get(key)
+        if (!subs) subscribers.set(key, (subs = new Set()))
+        subs.add(observer)
+      }
       return store[key]
     },
     set(value) {
       store[key] = value
-      console.log(`write: ${key}`)
+      const subs = subscribers.get(key)
+      if (subs) for (const subscription of Array.from(subs)) subscription()
     },
   })
 
   const proxy = new Proxy(store, {
     get(_store, key: string) {
-      // Primitive: the observable itself IS the value's node.
       if (!isObject) return node('value')[key as keyof Node<unknown>]
-      // Object: every field is its own node.
       return node(key)
     },
   })
